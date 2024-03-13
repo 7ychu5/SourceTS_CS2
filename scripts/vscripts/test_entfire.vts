@@ -1,0 +1,20 @@
+import { Instance } from "domains/serverpointentity"
+
+var times = 0
+
+Instance.PublicMethod("efire", /*none*/() => {
+    _efire()
+})
+
+function _efire() {
+    Instance.EntFireBroadcast("worldtext_times", "SetIntMessage", times)
+}
+
+Instance.PublicMethod("times_add", /*none*/() => {
+    _times_add()
+})
+
+function _times_add() {
+    times++
+    _efire()
+}

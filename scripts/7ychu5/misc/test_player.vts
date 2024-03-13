@@ -1,0 +1,34 @@
+import { Instance } from "domains/serverpointentity"
+
+function Dump(obj,name=""){
+	Instance.Log("Dump "+name+":")
+	Instance.Log(JSON.stringify(Object.keys(obj)))
+	Instance.Log(JSON.stringify(Object.getOwnPropertyNames(obj)))
+}
+
+function DumpAll(){
+	Dump(globalThis,"globalThis")
+	Dump(Instance,"Instance")
+    Dump(Instance.GetEntityOrigin,"Instance.GetEntityOrigin")
+}
+
+Instance.PublicMethod("get_pawn", /*none*/() => {
+    DumpAll()
+    var pawn = Instance.GetPlayerPawn(0);
+    Instance.Log(pawn.toString());
+    if (pawn) {
+        Instance.Log("got pawn");
+		Dump(pawn,"pawn");
+        let AbsOrigin = pawn.GetAbsOrigin();
+        let Origin = pawn.GetOrigin();
+
+        Instance.Log("AbsOrigin: " + AbsOrigin);
+        Instance.Log("Origin: " + Origin);
+        let insOrigin = Instance.GetEntityOrigin('btn_1')
+        Instance.Log("insOrigin: " + insOrigin);
+        Instance.Log("name: " + Instance.GetEntityName(pawn).toString());
+    }
+    else {
+        Instance.Log("no pawn");
+    }
+})

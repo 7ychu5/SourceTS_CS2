@@ -1,0 +1,568 @@
+const SCRIPT_OWNER = "7ychu5";
+const SCRIPT_TIME = "2024?1?5?09:48:17";
+const SCRIPT_MAP = "ze_r00ms";
+const SCRIPT_VERISON = "0.2";
+
+/*
+0.1?
+    2024?1?5?09:48:34
+    ??
+    ?????????
+0.2:
+    ???????
+0.3:
+    ?????????
+    ??bug??
+0.4:
+    2024?2?15?11:31:13
+    PulseV8 -> SourceTS
+    ????????room???????
+*/
+
+import { Instance } from "serverpointentity"
+
+//////////????//////////
+
+const npc_type = [
+    "maker_npc_landmine",
+    "maker_npc_watercube"
+];
+
+const item_type = [
+    "maker_item_HandFirework",
+    "maker_item_ladder",
+    "maker_item_heal",
+    "maker_item_push",
+    "maker_item_pull",
+    "maker_item_wall",
+    "maker_item_supply"
+];
+
+const event_type = [
+    "tornado_coming",
+    //"hegrenade_spawn"
+]
+
+const maze_num_max = 5       //????
+const maze_type_max = 10       //????????
+const sky_num_max = 4        //?????????
+const npc_num_max = npc_type.length       //NPC????
+const item_num_max = item_type.length       //??????
+const event_num_max = event_type.length       //??????
+
+//////////????//////////
+
+var arr_maze = new Array;
+var maze_arr = new Array;
+var maze_status = 0
+var maze_num = 1
+var player_num = 0
+var player_ntr_num = 0
+var cube_num = 0
+var current_maze_type = 0
+
+////////////////////////////
+
+function printl(a) {Instance.Msg(a);}
+
+function EntFire(targetname,key,value="",delay=0) {Instance.EntFireBroadcast(targetname,key,value,delay)}
+
+////////////////////////////
+
+
+Instance.PublicMethod("mapstart", /*none*/() => {
+    _mapstart()
+})
+
+function _mapstart() {
+    EntFire("server","Command","say v0.4 - update - 2024.2.15")
+    maze_num = 1
+    init_maze()
+    init_home()
+
+    let a = 1
+    while ( a <= 8 ) {
+        EntFire("btn_0"+a,"Disable")
+        a++
+    }
+}
+
+function init_maze() {
+    if(maze_status != 0) return;
+    cube_num = 0
+    var rows = 16;
+    var cols = 16;
+    for (var i = 0; i < rows; i++) {
+        arr_maze[i] = [];
+        for (var j = 0; j < cols; j++) {
+            arr_maze[i][j] = 0;
+            maze_arr[cube_num] = 0
+            cube_num++
+        }
+    }
+}
+
+function init_home() {
+    EntFire("light_barn_0*","Disable")
+    EntFire("prop_light_0*","Skin","0")
+    EntFire("btn_0*","disable")
+    EntFire("lamp_0*","SetColorTint","220 20 60")
+    EntFire("lamp_0*","Disable")
+    EntFire("post_processing_teleport_0*","Disable")
+    EntFire("trigger_teleport_0*","Disable")
+    EntFire("particle_teleport_0*","Stop")
+
+}
+
+Instance.PublicMethod("_random_room", /*none*/() => {
+    random_room()
+})
+
+function random_room() {
+    let RanInt = getRandomIntBetween(1, 8)
+    EntFire("server","command","say "+RanInt+" room is ready!")
+    EntFire("light_barn_0"+RanInt,"Enable")
+    EntFire("prop_light_0"+RanInt,"Skin","1")
+    EntFire("btn_0"+RanInt,"Enable")
+    EntFire("lamp_0"+RanInt,"SetColorTint","220 20 60")
+    EntFire("lamp_0"+RanInt,"Enable")
+}
+
+Instance.PublicMethod("_maze_build", /*none*/() => {
+    maze_build()
+})
+
+function maze_build() {
+    //arr_maze[15][15] = 1
+    arr_maze[0][0] = 1
+    maze_go(0,0);
+}
+
+function maze_go(x,y) {
+    if(x==15 && y==15){
+        maze_status++;
+        if(maze_status >= 2){
+            maze_spawn();
+        }
+        else maze_go(0,0);
+        return;
+    }
+    let RanInt = getRandomInt(10)
+    if(maze_status == 0){
+        if(RanInt <= 3){if(y >= 15){maze_go(x,y);return;}maze_go_down(x,y)}
+        else if(RanInt <= 7){if(x >= 15){maze_go(x,y);return;}maze_go_right(x,y)}
+        else if(RanInt <= 8){if(x <= 0){maze_go(x,y);return;}maze_go_left(x,y)}
+        else{if(y <= 0){maze_go(x,y);return;}maze_go_up(x,y)}
+    }
+    else{
+        if(RanInt <= 3){if(x >= 15){maze_go(x,y);return;}maze_go_right(x,y)}
+        else if(RanInt <= 7){if(y >= 15){maze_go(x,y);return;}maze_go_down(x,y)}
+        else if(RanInt <= 8){if(x <= 0){maze_go(x,y);return;}maze_go_left(x,y)}
+        else{if(y <= 0){maze_go(x,y);return;}maze_go_up(x,y)}
+    }
+
+}
+
+function maze_go_up(x,y) {arr_maze[x][y-1] = 1;maze_arr[x*16+y+1] = 1;maze_go(x, y-1);}
+
+function maze_go_down(x,y) {arr_maze[x][y+1] = 1;maze_arr[x*16+y+1] = 1;maze_go(x, y+1);}
+
+function maze_go_left(x,y) {arr_maze[x-1][y] = 1;maze_arr[x*16+y+1] = 1;maze_go(x-1, y);}
+
+function maze_go_right(x,y) {arr_maze[x+1][y] = 1;maze_arr[x*16+y+1] = 1;maze_go(x+1, y);}
+
+
+
+function maze_spawn() {
+    EntFire("trigger_rooms_out", "Enable")
+    cube_num = 0
+    current_maze_type = getRandomInt(maze_type_max) + 1
+    maze_spawn_real(0)
+    maze_status = 0;
+
+    key_spawn()
+    item_spawn();item_spawn();item_spawn()
+    npc_spawn();npc_spawn();npc_spawn();
+    sky_change(0)
+    weather_change()
+
+    if(getRandomIntBetween(1,100)<=1) event_spawn()
+}
+
+Instance.PublicMethod("_maze_spawn_real", /*none*/() => {
+    if(cube_num > 255) return
+    else maze_spawn_real(cube_num++)
+})
+
+function maze_spawn_real(cube_num) {
+    if(maze_arr[cube_num] == 1) EntFire("maker_room_block_"+current_maze_type+"_1", "ForceSpawnAtEntityOrigin", "spawn_point_" + cube_num.toString())
+    else{
+        if(getRandomInt(100) <= 1) EntFire("maker_room_block_"+current_maze_type+"_3", "ForceSpawnAtEntityOrigin", "spawn_point_" + cube_num.toString())
+        else EntFire("maker_room_block_"+current_maze_type+"_2", "ForceSpawnAtEntityOrigin", "spawn_point_" + cube_num.toString())
+    }
+
+    EntFire("relay_room_spawn", "Trigger")
+    // let x = 0
+    // while(x < 16)
+    // {
+    //     let y = 0
+    //     while(y < 16)
+    //     {
+    //         if(arr_maze[x][y]==1) Instance.EntFireBroadcast("maker_room_block_"+RanInt+"_1", "ForceSpawnAtEntityOrigin", "spawn_point_" + (x*16+y+1).toString())
+    //         else{
+    //             if(getRandomInt(100) <= 1) Instance.EntFireBroadcast("maker_room_block_"+RanInt+"_3", "ForceSpawnAtEntityOrigin", "spawn_point_" + (x*16+y+1).toString())
+    //             else Instance.EntFireBroadcast("maker_room_block_"+RanInt+"_2", "ForceSpawnAtEntityOrigin", "spawn_point_" + (x*16+y+1).toString())
+    //         }
+    //         y++
+    //     }
+    //     x++
+    // }
+}
+
+function event_spawn() {
+    switch (getRandomInt(event_num_max)) {
+        case 0:
+            EntFire("relay_event_1", "Trigger")
+            break;
+        // case 1:
+        //     EntFire("relay_event_2", "Trigger")
+        //     break;
+
+        default:
+            EntFire("server", "Command", "say No EVENT")
+            break;
+    }
+}
+
+function npc_spawn() {
+    let x = getRandomInt(15)
+    let y = getRandomInt(15)
+    if(arr_maze[x][y] == 0) item_spawn();
+    else EntFire(npc_type[getRandomInt(npc_num_max)], "ForceSpawnAtEntityOrigin", "spawn_point_" + (x*16+y+1).toString());
+    return;
+}
+
+function weather_change() {
+    EntFire("trigger_thunder", "Disable")
+    EntFire("thunder_timer", "Disable")
+    EntFire("relay_weather_change", "trigger")
+    EntFire("soundscape_rain", "Disable")
+    if(getRandomInt(7)<=1){
+        EntFire("relay_weather_change", "FireUser1")
+        EntFire("post_processing_rain", "Enable")
+        EntFire("trigger_thunder", "Enable")
+        EntFire("thunder_timer", "Enable")
+        EntFire("soundscape_rain", "Enable")
+    }
+    if(getRandomInt(7)<=1){
+        EntFire("relay_weather_change", "FireUser2")
+        EntFire("post_processing_snow", "Enable")
+    }
+
+}
+
+
+function sky_change(status) {
+    if(status == 0){
+        EntFire("skybox_*", "Disable")
+        EntFire("light_env_*", "turnoff")
+    }
+    let RanInt = getRandomInt(sky_num_max) + 2
+    EntFire("skybox_"+RanInt, "Enable")
+    EntFire("light_env_"+RanInt, "turnon")
+    fog_change(RanInt)
+}
+
+function fog_change(status) {
+    if(status == 4 ||status == 5){//??
+        let x = getRandomIntBetween(4,32).toString();
+        let y = getRandomIntBetween(4,32).toString();
+        let z = getRandomIntBetween(4,32).toString();
+        let temp = x + " " + y + " " + z;
+        EntFire("fog_controller", "setfogcolor", temp)
+
+        let min = getRandomIntBetween(128,256).toString()
+        let max = getRandomIntBetween(257,512).toString()
+        EntFire("fog_controller", "setfogstartdistance", min)
+        EntFire("fog_controller", "setfogenddistance", max)
+    }
+    else{//??
+        let x = getRandomIntBetween(128,192).toString();
+        let y = getRandomIntBetween(128,192).toString();
+        let z = getRandomIntBetween(128,192).toString();
+        let temp = x + " " + y + " " + z;
+        EntFire("fog_controller", "setfogcolor", temp)
+
+        let min = getRandomIntBetween(256,512).toString()
+        let max = getRandomIntBetween(1024,2048).toString()
+        EntFire("fog_controller", "setfogstartdistance", min)
+        EntFire("fog_controller", "setfogenddistance", max)
+    }
+}
+
+function item_spawn() {
+    let x = getRandomInt(15)
+    let y = getRandomInt(15)
+    if(arr_maze[x][y] == 0) item_spawn();
+    else EntFire(item_type[getRandomInt(item_num_max)], "ForceSpawnAtEntityOrigin", "spawn_point_" + (x*16+y+1).toString());
+    return;
+}
+
+function key_spawn() {
+    let x = getRandomInt(15)
+    let y = getRandomInt(15)
+    if(arr_maze[x][y] == 0) key_spawn();
+    else EntFire("maker_item_key", "ForceSpawnAtEntityOrigin", "spawn_point_" + (x*16+y+1).toString());
+    return;
+}
+
+Instance.PublicMethod("_room_over", /*none*/() => {
+    room_over()
+
+})
+
+function room_over() {
+    init_home()
+    fog_change(0)
+    if(maze_num >= maze_num_max) escape_start()
+    else{
+        maze_num++
+        EntFire("worldtext_room_num", "SetIntMessage", maze_num);
+    }
+
+}
+
+Instance.PublicMethod("_room_destroy", /*none*/() => {
+    room_destroy()
+})
+
+function room_destroy() {
+    init_maze()
+    EntFire("room_block_*", "kill");
+    EntFire("particle_teleport_room_out", "Stop");
+    EntFire("trigger_teleport_room_out", "Disable");
+    random_room()
+    EntFire("npc_*", "kill")
+    EntFire("post_processing_rain", "Disable")
+    EntFire("post_processing_snow", "Disable")
+}
+
+function escape_start() {
+    EntFire("trigger_teleport_escape", "Enable");
+    EntFire("timer_1", "Enable");
+    EntFire("timer_2", "Enable");
+    EntFire("fog_controller", "Disable")
+    EntFire("relay_say_escape", "Trigger")
+
+    let ntr_rate = player_ntr_num/player_num*100
+    if(ntr_rate >= 50) EntFire("escape_ntr_relay", "Enable")
+
+}
+
+Instance.PublicMethod("_ntr_ending", /*none*/() => {
+    ntr_ending();
+})
+
+function ntr_ending() {
+    EntFire("maker_escape_ntr_block", "ForceSpawnAtEntityOrigin", "escape_block_ntr_target_"+getRandomIntBetween(1,4))
+    EntFire("maker_escape_ntr_block", "ForceSpawnAtEntityOrigin", "escape_block_ntr_target_"+getRandomIntBetween(1,4))
+}
+
+Instance.PublicMethod("_count_reset", /*none*/() => {
+    player_num = 0;
+    player_ntr_num = 0
+})
+
+Instance.PublicMethod("_ply_count", /*none*/() => {
+    ply_count()
+})
+
+
+function ply_count() {
+    player_num++
+}
+
+function plr_count_display() {
+    Instance.Msg(player_num+" players here")
+
+}
+
+Instance.PublicMethod("_ntr_count", /*none*/() => {
+    ntr_count()
+    ply_count()
+    ntr_count_display()
+})
+function ntr_count() {
+    player_ntr_num++
+}
+
+Instance.PublicMethod("_ntr_count_display", /*none*/() => {
+    ntr_count_display()
+})
+
+function ntr_count_display() {
+    plr_count_display()
+    Instance.Msg(player_ntr_num+" ntr here")
+
+    player_num -= player_ntr_num;
+    let ntr_rate = player_ntr_num/player_num*100
+    // let ntr_text_num = 20
+    // let ntr_text = ""
+
+    // while(ntr_rate / 5 >= 0){
+    //     ntr_rate -= 5
+    //     ntr_text_num--;
+    //     ntr_text += "/";
+    // }
+    // while(ntr_text_num >= 0){
+    //     ntr_text += "_";
+    //     ntr_text_num--;
+    // }
+    EntFire("worldtext_ntr", "SetMessage", ntr_rate.toFixed(2) + "%")
+
+}
+
+function getRandomInt(max) {
+    return Math.floor(Math.random() * max)
+}
+
+function getRandomIntBetween(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) ) + min;
+}
+
+/*
+1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+0,1,0,1,0,0,1,0,0,0,0,0,0,0,0,0
+0,1,1,1,1,1,1,0,1,1,0,0,0,0,0,0
+0,1,1,0,0,0,1,1,1,1,1,0,0,0,0,0
+0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0
+0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+*/
+
+///////////////////////////////////////
+//////////////item_origin//////////////
+///////////////////////////////////////
+
+var item_origin = new Array;
+item_origin = [
+    [8,-8,72],
+]
+
+function Dump(obj,name=""){
+	Instance.Msg("Dump "+name+":")
+	Instance.Msg(JSON.stringify(Object.keys(obj)))
+	Instance.Msg(JSON.stringify(Object.getOwnPropertyNames(obj)))
+}
+
+///////////////////////////////////////
+///////////////////////////////////////
+///////////////////////////////////////
+
+function FindPlayerNearest(origin_end) {
+    let user = null
+    let temp_dis = 0
+    let temp_dis_max = 0
+    let temp_origin = ["0","0","0"]
+    let temp_x = 0.000000
+    let temp_y = 0.000000
+    let temp_z = 0.000000
+    for (let j = 0; j < 64; j++) {
+        var pawn = Instance.GetPlayerPawn(j);
+        if (pawn) {
+            temp_origin = pawn.GetOrigin().toString().split(",")
+            temp_x = Number(temp_origin[0])
+            temp_y = Number(temp_origin[1])
+            temp_z = Number(temp_origin[2])
+            let origin = [temp_x,temp_y,temp_z]
+
+            temp_dis = GetDistance3D(origin,origin_end)
+            if(temp_dis_max < temp_dis){
+                temp_dis_max = temp_dis;
+                user = pawn
+            }
+        }
+    }
+    if(user != null) user.DestroyWeapon(user.GetActiveWeapon())
+
+    //printl(user.GetActiveWeapon().toString())
+    
+}
+
+function GetDistance3D(v1,v2) {
+    
+    return Math.sqrt((v1[0]-v2[0])*(v1[0]-v2[0]) + (v1[1]-v2[1])*(v1[1]-v2[1]) + (v1[2]-v2[2])*(v1[2]-v2[2]))
+}
+
+///////////////////////////////////////
+///////////////zm_item/////////////////
+///////////////////////////////////////
+
+Instance.PublicMethod("get_zm_item", /*number*/(id = 0) => {
+    _get_zm_item(id);
+})
+
+function _get_zm_item(id = 0) {
+    switch (id.toString()) {
+        case "0":printl("no item here");break;
+        case "1":get_zm_blockbullet();break;
+    }
+}
+
+function get_zm_blockbullet() {
+    FindPlayerNearest(item_origin[0]);
+}
+
+///////////////////////////////////////
+///////////////////////////////////////
+///////////////////////////////////////
+var color_light_screen_r = 0
+var color_light_screen_g = 0
+var color_light_screen_b = 255
+var color_change_status = 1 //1 = g++ ; 2 = b-- ; 3 = r++ ;
+
+Instance.PublicMethod("light_screen_change", /*none*/() => {
+    _light_screen_change();
+})
+
+function _light_screen_change() {
+    switch (color_change_status) {
+        case 1:
+            if(color_light_screen_g >= 255) color_change_status = 2
+            color_light_screen_g+=10
+            break;
+        case 2:
+            if(color_light_screen_b <= 0) color_change_status = 3
+            color_light_screen_b-=10
+            break;
+        case 3:
+            if(color_light_screen_r >= 255){
+                color_change_status = 1
+                color_light_screen_r = 0
+                color_light_screen_g = 0
+                color_light_screen_b = 255
+            }
+            color_light_screen_r+=10
+            break;
+        default:
+            Instance.Msg("light_screen_change ERROR,Call Author now pls");
+            break;
+    }
+    if(color_light_screen_r > 255) color_light_screen_r = 255
+    if(color_light_screen_r < 0) color_light_screen_r = 0
+    if(color_light_screen_g > 255) color_light_screen_g = 255
+    if(color_light_screen_g < 0) color_light_screen_g = 0
+    if(color_light_screen_b > 255) color_light_screen_b = 255
+    if(color_light_screen_b < 0) color_light_screen_b = 0
+    let color = color_light_screen_r + " " + color_light_screen_g + " " + color_light_screen_b
+    EntFire("light_screen", "SetColor", color.toString())
+}

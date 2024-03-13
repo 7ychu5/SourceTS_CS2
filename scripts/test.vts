@@ -1,0 +1,76 @@
+import { Instance } from "domains/serverpointentity"
+
+function Dump(obj,name=""){
+	Instance.Log("Dump "+name+":")
+	Instance.Log(JSON.stringify(Object.keys(obj)))
+	Instance.Log(JSON.stringify(Object.getOwnPropertyNames(obj)))
+}
+
+function DumpAll(){
+	Dump(globalThis,"globalThis")
+	Dump(Instance,"Instance")
+}
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+Instance.InitialActivate(() => {
+	DumpAll()
+})
+
+Instance.PublicMethod("TestNumber",/*number*/ (num) => {
+	Instance.Log(`TestNumber ${num}`)
+})
+
+Instance.PublicMethod("TestString",/*string*/ (text) => {
+	Instance.Log(`TestString ${text}`)
+})
+
+Instance.PublicMethod("TestBoolean",/*boolean*/ (b) => {
+	Instance.Log(`TestBoolean ${b}`)
+})
+
+Instance.PublicMethod("TestNone",() => {
+	Instance.Log("TestNone")
+})
+
+Instance.PublicMethod("SetHealth",/*number*/(num=0) => {
+	if(num==0){
+		num=1+getRandomInt(100)
+	}
+	Instance.EntFireBroadcast("!player", "sethealth",num)
+	Instance.Log("SetHealth "+num)
+})
+
+
+
+Instance.PublicMethod("DumpAll",DumpAll)
+
+let sum=0
+let timerEnabled=false
+Instance.PublicMethod("TimerTick",() => {
+	if(!timerEnabled) return
+	sum++
+	Instance.Log("TimerTick "+sum)
+	Instance.EntFireBroadcast("text_sum", "SetMessage","Sum "+sum)
+})
+
+Instance.PublicMethod("ToggleTimer",() => {
+	timerEnabled=!timerEnabled
+	Instance.Log("ToggleTimer "+timerEnabled)
+	Instance.EntFireBroadcast("timer", timerEnabled?"Enable":"Disable")
+})
+
+Instance.PublicMethod("PlayerPawnTest",/*number*/ (num=0) => {
+	Instance.Log("PlayerPawnTest")
+	//let player2=Instance.GetPlayerPawn(num)
+	//let playerСontroller=player2.GetController()
+	//Dump(player2,"player")
+	//Dump(playerСontroller,"playerСontroller")
+})
+
+
+
+
+

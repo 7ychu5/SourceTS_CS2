@@ -1,0 +1,188 @@
+const SCRIPT_OWNER = "7ychu5";
+const SCRIPT_TIME = "2024年3月1日09:21:19";
+const SCRIPT_MAP = "PreFire";
+const SCRIPT_VERISON = "0.1";
+
+/*
+0.1:
+    2024年3月1日09:21:44
+    目前是没有办法直接抓到pawn并SetOrigin的，我想利用point_teleport把BOT一步步传到地图的各个坐标点
+
+*/
+
+import { Instance } from "serverpointentity"
+
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+function printl(a) {Instance.Msg(a);}
+
+function EntFire(targetname,key,value="",delay=0) {Instance.EntFireBroadcast(targetname,key,value,delay)}
+
+function GetRandomIntBetween(min, max) {return Math.floor(Math.random() * (max - min + 1) ) + min;}
+
+function Dump(obj,name=""){
+	Instance.Msg("Dump "+name+":")
+	Instance.Msg(JSON.stringify(Object.keys(obj)))
+	Instance.Msg(JSON.stringify(Object.getOwnPropertyNames(obj)))
+}
+
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+
+class player {
+    slot = -1;
+    controller = null;
+    pawn = null;
+    constructor(slot, controller, pawn) {
+        this.slot = slot;
+        this.controller = controller;
+        this.pawn = pawn;
+    }
+    status = 0 //0表示在冻库里，1表示被拉出去了
+}
+
+var players = new Array;
+
+Instance.InitialActivate(() => {
+    printl("/////////////////////////////////////////");
+    printl("/////////////////////////////////////////");
+    printl("/////////////////////////////////////////");
+    printl("/////////////////////////////////////////");
+    printl("//////////SourceTS is loading.../////////");
+    printl("/////////////////////////////////////////");
+    printl("/////////////////////////////////////////");
+    printl("/////////////////////////////////////////");
+    printl("/////////////////////////////////////////");
+    player_init()
+    _player_reg()
+})
+
+function player_init() {for(let j = 0; j < 64; j++) {players[j] = new player(null,null,-1);}}
+
+Instance.PublicMethod("player_reg", () => { _player_reg();})
+
+function _player_reg() {
+    for (let j = 0; j < 64; j++) {
+        if(players[j].controller != null){
+            if(players[j].controller.GetPlayer() != null)
+            continue;
+        }
+        else{
+            var pawn = Instance.GetPlayerPawn(j);
+            if (pawn) {
+                var controller = pawn.GetOriginalController();
+                if (controller) players[j] = (new player(j, controller, pawn))
+            }
+        }
+    }
+}
+
+Instance.PublicMethod("list_player", /*none*/() => {
+    _list_player()
+})
+
+function _list_player() {
+    for (let j = 0; j < 64; j++) {
+        if(players[j].controller == null) continue
+        else{
+            printl(players[j].slot)
+            printl(players[j].controller)
+            printl(players[j].pawn)
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+
+// Instance.PublicMethod("count", /*string*/(a) => {
+//     _count(a)
+// })
+
+// function _count(a) {
+//     printl(a.toString() + " ENTITY 's number is " + Instance.CountEntitiesWithName(a))
+// }
+
+
+// Instance.PublicMethod("change_tele_status", /*number*/(status) => {_change_tele_status(status)})
+
+// function _change_tele_status(status) {
+//     tele_status = status
+//     printl("tele_status changed into "+ status.toString())
+// }
+
+// var tele_status = 0
+
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+var spawn_num = 0
+var fore_model_status = 1
+
+Instance.PublicMethod("kv", /*string*/(a,b) => {
+    a = b
+})
+
+Instance.PublicMethod("fore_model_status_change", /*number*/(a = -1) => {
+    if(a == -1){
+        if(fore_model_status == 1) fore_model_status = 0
+        else fore_model_status = 1
+    }
+    else{
+        fore_model_status = a
+    }
+})
+
+Instance.PublicMethod("ev_playerdeath_ct", /*none*/() => {
+    _ev_playerdeath(3)
+})
+
+function _ev_playerdeath(teamnum) {
+    if(teamnum == 3)
+    {
+        EntFire("prop_bot","kill","",0.00)
+        spawn_bot_next()
+    }
+}
+
+Instance.PublicMethod("spawn_bot_start", /*none*/() => {
+    _spawn_bot_start()
+})
+
+function _spawn_bot_start() {
+    spawn_bot_clear()
+    spawn_bot_next()
+}
+
+function spawn_bot_next() {
+    spawn_num++
+    EntFire("dest_bot","kill","",0.00)
+
+    EntFire("maker_dest_bot","ForceSpawnAtEntityOrigin","spawn_point_" + (spawn_num.toString()),0.02)
+
+    EntFire("trigger_tele_bot_9","Enable","",0.05)
+
+    if(fore_model_status == 1) EntFire("maker_dest_next","ForceSpawnAtEntityOrigin","spawn_point_" + (spawn_num+1).toString(),0.05)
+
+}
+
+
+Instance.PublicMethod("spawn_bot_clear", /*none*/() => {spawn_bot_clear()})
+function spawn_bot_clear() {
+    spawn_num = 0
+}

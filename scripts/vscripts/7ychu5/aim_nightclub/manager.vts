@@ -1,0 +1,89 @@
+const SCRIPT_OWNER = "7ychu5";
+const SCRIPT_TIME = "2023年12月13日09:05:08";
+const SCRIPT_MAP = "de_nightclub";
+const SCRIPT_VERISON = "0.3";
+
+/*
+0.1：
+    2023年12月13日09:05:19
+    立项
+    随机生成场地内六种板子
+0.2:
+    显示屏颜色变化
+0.3:
+    PulseV8 -> SourceTS
+*/
+
+import { Instance } from "serverpointentity"
+
+var color_light_screen_r = 0
+var color_light_screen_g = 0
+var color_light_screen_b = 255
+var color_change_status = 1 //1 = g++ ; 2 = b-- ; 3 = r++ ;
+
+Instance.InitialActivate(() => {
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("//////Let's hunt them in the dark.../////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+
+})
+
+Instance.PublicMethod("spawn_glass", () => {
+    _spawn_glass();
+})
+
+function _spawn_glass() {
+    let x = 0
+    while(x <= 384)
+    {
+        x++
+        let temp = getRandomInt(6)
+        Instance.Msg(temp);
+        Instance.EntFireBroadcast("maker_glass_" + temp, "ForceSpawnAtEntityOrigin", "target_spawn_" + x)
+        //Instance.EntFireBroadcast("target_spawn_" + x, "kill")
+    }
+
+}
+
+function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+}
+
+Instance.PublicMethod("light_screen_change", /*none*/() => {
+    _light_screen_change();
+})
+
+function _light_screen_change() {
+    switch (color_change_status) {
+        case 1:
+            if(color_light_screen_g >= 255) color_change_status = 2
+            color_light_screen_g+=10
+            break;
+        case 2:
+            if(color_light_screen_b <= 0) color_change_status = 3
+            color_light_screen_b-=10
+            break;
+        case 3:
+            if(color_light_screen_r >= 255){
+                color_change_status = 1
+                color_light_screen_r = 0
+                color_light_screen_g = 0
+                color_light_screen_b = 255
+            }
+            color_light_screen_r+=10
+            break;
+        default:
+            Instance.Msg("light_screen_change ERROR,Call Author now pls");
+            break;
+    }
+    if(color_light_screen_r > 255) color_light_screen_r = 255
+    if(color_light_screen_r < 0) color_light_screen_r = 0
+    if(color_light_screen_g > 255) color_light_screen_g = 255
+    if(color_light_screen_g < 0) color_light_screen_g = 0
+    if(color_light_screen_b > 255) color_light_screen_b = 255
+    if(color_light_screen_b < 0) color_light_screen_b = 0
+    let color = color_light_screen_r + " " + color_light_screen_g + " " + color_light_screen_b
+    Instance.EntFireBroadcast("light_screen", "SetColor", color.toString())
+}

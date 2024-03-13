@@ -1,0 +1,246 @@
+const SCRIPT_OWNER = "7ychu5";
+const SCRIPT_TIME = "2024年2月20日15:42:37";
+const SCRIPT_MAP = "test";
+const SCRIPT_VERISON = "0.1";
+
+/*
+0.1：
+    2024年2月20日15:42:24
+    开始测试
+0.2
+    2024年2月21日09:33:25
+    编写玩家登记系统
+*/
+
+import { Instance } from "serverpointentity"
+
+////////////////////////////
+
+function printl(a) {Instance.Msg(a);}
+
+function EntFire(targetname,key,value="",delay=0) {Instance.EntFireBroadcast(targetname,key,value,delay)}
+
+////////////////////////////
+
+function Dump(obj,name=""){
+	Instance.Msg("Dump "+name+":")
+	Instance.Msg(JSON.stringify(Object.keys(obj)))
+	Instance.Msg(JSON.stringify(Object.getOwnPropertyNames(obj)))
+}
+
+function DumpAll(){
+	Dump(globalThis,"globalThis")
+	Dump(Instance,"Instance")
+}
+
+class player {
+    slot = -1;
+    controller = null;
+    pawn = null;
+    constructor(slot, controller, pawn) {
+        this.slot = slot;
+        this.controller = controller;
+        this.pawn = pawn;
+      }
+}
+
+var players = new Array;
+
+Instance.InitialActivate(() => {
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("//////////SourceTS is loading.../////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    Instance.Msg("/////////////////////////////////////////");
+    player_init()
+})
+
+function player_init() {
+    for (let j = 0; j < 64; j++) {
+        players[j] = new player(null,null,-1);
+    }
+}
+
+Instance.PublicMethod("player_reg", () => {
+    _player_reg();
+})
+
+function _player_reg() {
+    for (let j = 0; j < 64; j++) {
+        if(players[j].controller != null)
+        {
+            if(players[j].controller.GetPlayer() != null)
+            printl("this had been a guy")
+            printl(players[j].controller.GetPlayer().toString())
+            printl("////////////////////////////")
+            continue;
+        }
+        else
+        {
+            var pawn = Instance.GetPlayerPawn(j);
+            if (pawn) {
+                Instance.Msg("got pawn");
+                var controller = pawn.GetOriginalController();
+                if (controller) {
+                    Instance.Msg("got controller");
+                    players[j] = (new player(j, controller, pawn))
+                }
+            }     
+        }
+        
+    }
+}
+
+
+
+
+Instance.PublicMethod("ev_player_spawn_fire", () => {
+    //_test_6()
+})
+
+var stage = 6
+
+Instance.PublicMethod("test_main", () => {
+    _test_main(stage);
+})
+
+Instance.PublicMethod("testing", () => {
+    _test_7();
+})
+
+Instance.PublicMethod("spec", /*number*/(a) => {
+    players[a].pawn.ChangeTeam(1)
+})
+
+Instance.PublicMethod("t", /*number*/(a = 0) => {
+    players[a].pawn.ChangeTeam(2)
+})
+
+Instance.PublicMethod("ct", /*number*/(a = 0) => {
+    players[a].pawn.ChangeTeam(3)
+})
+
+Instance.PublicMethod("getslot", /*number*/(a = 0) => {
+    printl(players[a].controller.GetPlayerSlot())
+})
+
+Instance.PublicMethod("getpawn", /*number*/(a = 0) => {
+    printl(Instance.GetPlayerPawn(players[a].controller.GetPlayerSlot()))
+})
+
+Instance.PublicMethod("getpawn2", /*number*/(a = 0) => {
+    printl(players[a].controller.GetPlayer())
+    printl(players[a].controller.GetObserver())
+    if(players[a].controller.GetPlayer() == players[a].controller.GetObserver()) printl("yes"); else printl("no");
+    
+})
+Instance.PublicMethod("getpawn3", /*number*/(a = 0) => {
+    if(players[a].pawn == players[a].controller.GetPlayer()) printl("yes"); else printl("no");
+    Dump(players[a].controller.GetPlayer())
+    Dump(players[a].controller.GetObserver())
+})
+
+Instance.PublicMethod("pawn_weapon_1", /*number*/(a = 0) => {
+    players[a].controller.GetPlayer().GiveNamedItem("weapon_ak47")
+})
+
+Instance.PublicMethod("pawn_weapon_2", /*number*/(a = 0) => {
+    players[a].pawn.GiveNamedItem("weapon_ak47")
+})
+
+
+function _test_main(a) {
+    switch (a) {
+        case 1:_test_1();break;
+        case 2:_test_2();break;
+        case 3:_test_3();break;
+        case 4:_test_4();break;
+        case 5:_test_5();break;
+        case 6:_test_6();break;
+        default:DumpAll();break;
+    }
+}
+
+function _test_1() {
+    Instance.Msg(Instance.DebugScreenText.length.toString())
+    let param = '1'
+    for (let j = 0; j < Instance.DebugScreenText.length; j++) {
+
+        Instance.DebugScreenText(param)
+        param = param + "," + "1"
+
+    }
+}
+
+function _test_2() {
+    var pawn = Instance.GetPlayerPawn(0);
+    if (pawn) {
+        Instance.Msg("got pawn");
+        // pawn.DestroyWeapon("weapon_ak47");
+        // pawn.DestroyWeapon("weapon_knife");
+        // pawn.DestroyWeapon("knife");
+        //pawn.DestroyWeapons();
+        pawn.GiveNamedItem("weapon_ak47")
+        Instance.Msg(pawn.GetOrigin().toString());
+        let teamnum = pawn.GetTeamNumber()
+        Instance.Msg(teamnum);
+        pawn.ChangeTeam(1)
+        // if(teamnum == 2) pawn.ChangeTeam(3)
+        // else pawn.ChangeTeam(2)
+        Instance.Msg("no controller");
+        var controller = pawn.GetOriginalController();
+        if (controller) {
+            Instance.Msg("got controller");
+            var slot = controller.GetPlayerSlot();
+            Instance.Msg("slot: " + slot.toString());
+        }
+        else {
+            Instance.Msg("no controller");
+        }
+    }
+    else {
+        Instance.Msg("no pawn");
+    }
+}
+
+function _test_3() {
+    var plr = Instance.GetPlayerSlot(0);
+    plr.ChangeTeam(2)
+}
+
+function _test_4() {
+    Instance.EntFireBroadcast("!player", "color", "255 0 0", 5)
+}
+
+function _test_5() {
+    Instance.DebugWorldText("111111", "server", 0, 5.0, 5.0, false, "255 0 0", 255.0, 5.0);
+    //Instance.DebugScreenText("111111", 0.0, 0.0, 0, 5.0, "255 0 0", 255.0);
+}
+
+function _test_6() {
+    players.fill(new player(null,null,-1))
+    for (let j = 0; j < 64; j++) {
+        var pawn = Instance.GetPlayerPawn(j);
+        if (pawn) {
+            Instance.Msg("got pawn");
+            var controller = pawn.GetOriginalController();
+            if (controller) {
+                Instance.Msg("got controller");
+                var slot = controller.GetPlayerSlot();
+                players[j] = (new player(pawn, controller, slot))
+            }
+        }
+    }
+}
+
+function _test_7() {
+    for (let j = 0; j < 64; j++) {
+        printl(players[j].slot)
+        printl(players[j].controller)
+        printl(players[j].pawn)
+    }
+}
